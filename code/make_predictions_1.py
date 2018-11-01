@@ -45,15 +45,16 @@ Reading mean image, caffe model and its weights
 '''
 #Read mean image
 mean_blob = caffe_pb2.BlobProto()
-with open('/home/ubuntu/deeplearning-cats-dogs-tutorial/input/mean.binaryproto') as f:
-    mean_blob.ParseFromString(f.read())
+with open('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/input/mean.binaryproto', 'rb') as f:
+    data = f.read()
+    mean_blob.ParseFromString(data)
 mean_array = np.asarray(mean_blob.data, dtype=np.float32).reshape(
     (mean_blob.channels, mean_blob.height, mean_blob.width))
 
 
 #Read model architecture and trained model's weights
-net = caffe.Net('/home/ubuntu/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffenet_deploy_1.prototxt',
-                '/home/ubuntu/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffe_model_1_iter_10000.caffemodel',
+net = caffe.Net('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffenet_deploy_1.prototxt',
+                '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffe_model_1_iter_30000.caffemodel',
                 caffe.TEST)
 
 #Define image transformers
@@ -81,9 +82,9 @@ for img_path in test_img_paths:
     test_ids = test_ids + [img_path.split('/')[-1][:-4]]
     preds = preds + [pred_probas.argmax()]
 
-    print img_path
-    print pred_probas.argmax()
-    print '-------'
+    print(img_path)
+    print(pred_probas.argmax())
+    print('-------')
 
 '''
 Making submission file
