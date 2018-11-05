@@ -50,13 +50,12 @@ with open('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/input/mean.bin
 mean_array = np.asarray(mean_blob.data, dtype=np.float32).reshape(
     (mean_blob.channels, mean_blob.height, mean_blob.width))
 
-# Read model architecture and trained model's weights
-net = caffe.Net(
-    '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffenet_deploy_1.prototxt',
-    '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffe_model_1_iter_30000.caffemodel',
-    caffe.TEST)
+#Read model architecture and trained model's weights
+net = caffe.Net('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffenet_deploy_1.prototxt',
+                '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/caffe_model_1_iter_5000.caffemodel',
+                caffe.TEST)
 
-# Define image transformers
+#Define image transformers
 transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
 transformer.set_mean('data', mean_array)
 transformer.set_transpose('data', (2, 0, 1))
