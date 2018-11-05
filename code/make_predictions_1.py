@@ -44,7 +44,7 @@ Reading mean image, caffe model and its weights
 '''
 # Read mean image
 mean_blob = caffe_pb2.BlobProto()
-with open('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/input/mean.binaryproto', 'rb') as f:
+with open('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_1/mean.binaryproto', 'rb') as f:
     data = f.read()
     mean_blob.ParseFromString(data)
 mean_array = np.asarray(mean_blob.data, dtype=np.float32).reshape(
