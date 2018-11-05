@@ -1,3 +1,8 @@
 venv/
 .idea/
 *.iml
+input/
+*.caffemodel
+*.binaryproto
+*.log
+input.bkp.zip
