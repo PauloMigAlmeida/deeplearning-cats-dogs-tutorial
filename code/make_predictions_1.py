@@ -66,12 +66,39 @@ Making predicitions
 # Reading image paths
 test_img_paths = [img_path for img_path in glob.glob("../input/test1/*jpg")]
 
-# Making predictions
-test_ids = []
-preds = []
+
+# Prediction holder
+class PredictionHolder:
+
+    def __init__(self, id, output_rat, output_other):
+        self.id = id
+        self.output_rat = output_rat
+        self.output_other = output_other
+
+
+predictions = []
+
+for img_path in test_img_paths:
+    img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+    img = transform_img(img, img_width=IMAGE_WIDTH, img_height=IMAGE_HEIGHT)
+
+    net.blobs['data'].data[...] = transformer.preprocess('data', img)
+    out = net.forward()
+    pred_probas = out['prob']
+
+    # Flow variables
+    img_name = img_path.split('/')[-1][:-4]
+    pred = pred_probas[0]
+
+    predictions += [PredictionHolder(img_name, pred[1], pred[0])]
+    print(img_path)
+    print(pred)
+    print(pred_probas.argmax())
+    print('-------')
+
 
 for threshold in np.arange(0.1, 1.1, 0.1):
-    path = "../caffe_models/caffe_model_1/model_evaluation_tr_%s_.csv".format(str(threshold).replace('.', '_'))
+    path = "../caffe_models/caffe_model_1/model_evaluation_tr_{}_.csv".format(str(threshold).replace('.', '_'))
 
     count_tp = 0
     count_tn = 0
@@ -81,36 +108,21 @@ for threshold in np.arange(0.1, 1.1, 0.1):
     with open(path, "w") as f:
         f.write("ID,LABEL,THRESHOLD,TP,TN,FP,FN\n")
 
-        for img_path in test_img_paths:
-            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-            img = transform_img(img, img_width=IMAGE_WIDTH, img_height=IMAGE_HEIGHT)
+        for prediction in predictions:
 
-            net.blobs['data'].data[...] = transformer.preprocess('data', img)
-            out = net.forward()
-            pred_probas = out['prob']
-
-            # Flow variables
-            img_name = img_path.split('/')[-1][:-4]
-            pred = pred_probas[0]
-
-            output_val = 1 if pred[1] >= threshold else 0
-            true_positive = 1 if "rat" in img_name and output_val == 1 else 0
-            true_negative = 1 if "other" in img_name and output_val == 0 else 0
-            false_positive = 1 if "other" in img_name and output_val == 1 else 0
-            false_negative = 1 if "rat" in img_name and output_val == 0 else 0
+            output_val = 1 if prediction.output_rat >= threshold else 0
+            true_positive = 1 if "rat" in prediction.id and output_val == 1 else 0
+            true_negative = 1 if "other" in prediction.id and output_val == 0 else 0
+            false_positive = 1 if "other" in prediction.id and output_val == 1 else 0
+            false_negative = 1 if "rat" in prediction.id and output_val == 0 else 0
 
             count_tp += true_positive
             count_tn += true_negative
             count_fp += false_positive
             count_fn += false_negative
 
-            print(img_path)
-            print(pred)
-            print(pred_probas.argmax())
-            print('-------')
-
-            f.write("%s,%s,%s,%s,%s,%s,%s\n".format(
-                img_name,
+            f.write("{},{},{},{},{},{},{}\n".format(
+                prediction.id,
                 str(output_val),
                 str(threshold),
                 str(true_positive),
@@ -120,9 +132,10 @@ for threshold in np.arange(0.1, 1.1, 0.1):
             ))
 
         f.write(",,,,,,\n")
-        f.write(",,,%d,%d,%d,%d\n".format(count_tp, count_tn, count_fp, count_fn))
+        f.write(",,,{},{},{},{}\n".format(count_tp, count_tn, count_fp, count_fn))
         f.write(",,,,,,\n")
         f.write("Precision,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fp))))
         f.write("Recall,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fn))))
         f.write("F-Measure,{:.8f},,,,,\n".format(1/(0.9*(1/((count_tp/(count_tp+count_fp))/100))+(1-0.9)*(1/((count_tp/(count_tp+count_fn))/100)))))
+
     f.close()
