@@ -73,6 +73,11 @@ preds = []
 for threshold in np.arange(0.1, 1.1, 0.1):
     path = "../caffe_models/caffe_model_1/model_evaluation_tr_%s_.csv".format(str(threshold).replace('.', '_'))
 
+    count_tp = 0
+    count_tn = 0
+    count_fp = 0
+    count_fn = 0
+
     with open(path, "w") as f:
         f.write("ID,LABEL,THRESHOLD,TP,TN,FP,FN\n")
 
@@ -84,21 +89,40 @@ for threshold in np.arange(0.1, 1.1, 0.1):
             out = net.forward()
             pred_probas = out['prob']
 
+            # Flow variables
             img_name = img_path.split('/')[-1][:-4]
-            preds = preds + [pred_probas.argmax()]
+            pred = pred_probas[0]
+
+            output_val = 1 if pred[1] >= threshold else 0
+            true_positive = 1 if "rat" in img_name and output_val == 1 else 0
+            true_negative = 1 if "other" in img_name and output_val == 0 else 0
+            false_positive = 1 if "other" in img_name and output_val == 1 else 0
+            false_negative = 1 if "rat" in img_name and output_val == 0 else 0
+
+            count_tp += true_positive
+            count_tn += true_negative
+            count_fp += false_positive
+            count_fn += false_negative
 
             print(img_path)
-            print(pred_probas)
+            print(pred)
             print(pred_probas.argmax())
             print('-------')
 
             f.write("%s,%s,%s,%s,%s,%s,%s\n".format(
                 img_name,
-                str(pred_probas.argmax()),
+                str(output_val),
                 str(threshold),
-                "0",
-                "0",
-                "0",
-                "0"
+                str(true_positive),
+                str(true_negative),
+                str(false_positive),
+                str(false_negative)
             ))
+
+        f.write(",,,,,,\n")
+        f.write(",,,%d,%d,%d,%d\n".format(count_tp, count_tn, count_fp, count_fn))
+        f.write(",,,,,,\n")
+        f.write("Precision,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fp))))
+        f.write("Recall,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fn))))
+        f.write("F-Measure,{:.8f},,,,,\n".format(1/(0.9*(1/((count_tp/(count_tp+count_fp))/100))+(1-0.9)*(1/((count_tp/(count_tp+count_fn))/100)))))
     f.close()
