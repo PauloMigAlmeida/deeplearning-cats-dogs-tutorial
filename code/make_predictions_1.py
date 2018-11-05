@@ -131,11 +131,14 @@ for threshold in np.arange(0.1, 1.1, 0.1):
                 str(false_negative)
             ))
 
+        precision = (count_tp/(count_tp+count_fp))
+        recall = (count_tp/(count_tp+count_fn))
+
         f.write(",,,,,,\n")
         f.write(",,,{},{},{},{}\n".format(count_tp, count_tn, count_fp, count_fn))
         f.write(",,,,,,\n")
-        f.write("Precision,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fp))))
-        f.write("Recall,{:.8f},,,,,\n".format((count_tp/(count_tp+count_fn))))
-        f.write("F-Measure,{:.8f},,,,,\n".format(1/(0.9*(1/(count_tp/(count_tp+count_fp)))+(1-0.9)*(1/(count_tp/(count_tp+count_fn))))))
+        f.write("Precision,{:.8f},,,,,\n".format(precision))
+        f.write("Recall,{:.8f},,,,,\n".format(recall))
+        f.write("F-Measure,{:.8f},,,,,\n".format(1/(0.9*(1/precision)+(1-0.9)*(1/recall))))
 
     f.close()
