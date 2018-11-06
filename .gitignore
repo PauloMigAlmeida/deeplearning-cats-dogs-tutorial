@@ -3,6 +3,11 @@ venv/
 *.iml
 input/
 *.caffemodel
+*.solverstate
 *.binaryproto
 *.log
 input.bkp.zip
+*.csv
+*.png
+*.npy
+*/**/graph

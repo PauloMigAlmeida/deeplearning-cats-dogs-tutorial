@@ -53,7 +53,7 @@ mean_array = np.asarray(mean_blob.data, dtype=np.float32).reshape(
 
 #Read model architecture and trained model's weights
 net = caffe.Net('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffenet_deploy_2.prototxt',
-                '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffe_model_2_iter_7000.caffemodel',
+                '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffe_model_2_iter_1000.caffemodel',
                 caffe.TEST)
 
 #Define image transformers
@@ -100,7 +100,7 @@ for img_path in test_img_paths:
 
 
 for threshold in np.arange(0.1, 1.1, 0.1):
-    path = "../caffe_models/caffe_model_1/model_evaluation_tr_{}_.csv".format(str(threshold).replace('.', '_'))
+    path = "../caffe_models/caffe_model_2/model_evaluation_tr_{}_.csv".format(str(threshold).replace('.', '_'))
 
     count_tp = 0
     count_tn = 0
