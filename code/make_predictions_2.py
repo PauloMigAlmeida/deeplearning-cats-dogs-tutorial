@@ -2,18 +2,17 @@
 Title           :make_predictions_2.py
 Description     :This script makes predictions using the 2nd trained model and generates a submission file.
 Author          :Adil Moujahid
+Contributor     :Paulo Miguel Almeida
 Date Created    :20160623
-Date Modified   :20160625
-version         :0.2
+Date Modified   :20181105
+version         :0.3
 usage           :python make_predictions_2.py
-python_version  :2.7.11
+python_version  :3.6.x
 '''
 
-import os
 import glob
 import cv2
 import caffe
-import lmdb
 import numpy as np
 from caffe.proto import caffe_pb2
 
@@ -45,15 +44,16 @@ Reading mean image, caffe model and its weights
 '''
 #Read mean image
 mean_blob = caffe_pb2.BlobProto()
-with open('/home/ubuntu/deeplearning-cats-dogs-tutorial/input/mean.binaryproto') as f:
-    mean_blob.ParseFromString(f.read())
+with open('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/mean.binaryproto', 'rb') as f:
+    data = f.read()
+    mean_blob.ParseFromString(data)
 mean_array = np.asarray(mean_blob.data, dtype=np.float32).reshape(
     (mean_blob.channels, mean_blob.height, mean_blob.width))
 
 
 #Read model architecture and trained model's weights
-net = caffe.Net('/home/ubuntu/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffenet_deploy_2.prototxt',
-                '/home/ubuntu/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffe_model_2_iter_10000.caffemodel',
+net = caffe.Net('/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffenet_deploy_2.prototxt',
+                '/home/ubuntu/workspace/deeplearning-cats-dogs-tutorial/caffe_models/caffe_model_2/caffe_model_2_iter_7000.caffemodel',
                 caffe.TEST)
 
 #Define image transformers
@@ -65,13 +65,21 @@ transformer.set_transpose('data', (2,0,1))
 '''
 Making predicitions
 '''
-##Reading image paths
+# Reading image paths
 test_img_paths = [img_path for img_path in glob.glob("../input/test1/*jpg")]
 
-test_ids = []
-preds = []
 
-#Making predictions
+# Prediction holder
+class PredictionHolder:
+
+    def __init__(self, id, output_rat, output_other):
+        self.id = id
+        self.output_rat = output_rat
+        self.output_other = output_other
+
+
+predictions = []
+
 for img_path in test_img_paths:
     img = cv2.imread(img_path, cv2.IMREAD_COLOR)
     img = transform_img(img, img_width=IMAGE_WIDTH, img_height=IMAGE_HEIGHT)
@@ -80,19 +88,59 @@ for img_path in test_img_paths:
     out = net.forward()
     pred_probas = out['prob']
 
-    test_ids = test_ids + [img_path.split('/')[-1][:-4]]
-    preds = preds + [pred_probas.argmax()]
+    # Flow variables
+    img_name = img_path.split('/')[-1][:-4]
+    pred = pred_probas[0]
 
-    print img_path
-    print pred_probas.argmax()
-    print '-------'
+    predictions += [PredictionHolder(img_name, pred[1], pred[0])]
+    print(img_path)
+    print(pred)
+    print(pred_probas.argmax())
+    print('-------')
 
 
-'''
-Making submission file
-'''
-with open("../caffe_models/caffe_model_2/submission_model_2.csv","w") as f:
-    f.write("id,label\n")
-    for i in range(len(test_ids)):
-        f.write(str(test_ids[i])+","+str(preds[i])+"\n")
+for threshold in np.arange(0.1, 1.1, 0.1):
+    path = "../caffe_models/caffe_model_1/model_evaluation_tr_{}_.csv".format(str(threshold).replace('.', '_'))
+
+    count_tp = 0
+    count_tn = 0
+    count_fp = 0
+    count_fn = 0
+
+    with open(path, "w") as f:
+        f.write("ID,LABEL,THRESHOLD,TP,TN,FP,FN\n")
+
+        for prediction in predictions:
+
+            output_val = 1 if prediction.output_rat >= threshold else 0
+            true_positive = 1 if "rat" in prediction.id and output_val == 1 else 0
+            true_negative = 1 if "other" in prediction.id and output_val == 0 else 0
+            false_positive = 1 if "other" in prediction.id and output_val == 1 else 0
+            false_negative = 1 if "rat" in prediction.id and output_val == 0 else 0
+
+            count_tp += true_positive
+            count_tn += true_negative
+            count_fp += false_positive
+            count_fn += false_negative
+
+            f.write("{},{},{},{},{},{},{}\n".format(
+                prediction.id,
+                str(output_val),
+                str(threshold),
+                str(true_positive),
+                str(true_negative),
+                str(false_positive),
+                str(false_negative)
+            ))
+
+        precision = (count_tp/(count_tp+count_fp))
+        recall = (count_tp/(count_tp+count_fn))
+
+        f.write(",,,,,,\n")
+        f.write(",,,{},{},{},{}\n".format(count_tp, count_tn, count_fp, count_fn))
+        f.write(",,,,,,\n")
+        f.write("Precision,{:.8f},,,,,\n".format(precision))
+        f.write("Recall,{:.8f},,,,,\n".format(recall))
+        f.write("F-Measure,{:.8f},,,,,\n".format(1/(0.9*(1/precision)+(1-0.9)*(1/recall))))
+
 f.close()
