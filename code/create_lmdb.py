@@ -66,6 +66,7 @@ with in_db.begin(write=True) as in_txn:
     for in_idx, img_path in enumerate(train_data):
         if in_idx %  6 == 0:
             continue
+        print("Processing : " + img_path)
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
         img = transform_img(img, img_width=IMAGE_WIDTH, img_height=IMAGE_HEIGHT)
         if 'other' in img_path:
@@ -85,6 +86,7 @@ with in_db.begin(write=True) as in_txn:
     for in_idx, img_path in enumerate(train_data):
         if in_idx % 6 != 0:
             continue
+        print("Processing : " + img_path)
         img = cv2.imread(img_path, cv2.IMREAD_COLOR)
         img = transform_img(img, img_width=IMAGE_WIDTH, img_height=IMAGE_HEIGHT)
         if 'other' in img_path:
